@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Form</title>
+    <link rel="stylesheet" href="/public/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="bg">
+        <div class="flex flex-col justify-center items-center min-h-screen">
+            <h1 class="text-4xl font-bold mb-5">Enter a Tweet</h1>
+            <form id="tweetForm" class="w-full max-w-lg">
+                <input type="text" id="tweetInput" name="tweet" placeholder="Enter your tweet here" required class="w-full px-4 py-2 mb-4 text-black rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="button" onclick="analyzeSentiment()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Analyze Sentiment</button>
+            </form>
+            <div id="result_tweet" class="mt-8 flex flex-col justify-center items-center"></div>
+            <a href="/" class="mt-4 px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition duration-300 ease-in-out">Back to Home</a>
+        </div>
+    </div>
+    <footer class="foot mt-8">
+        <p class="text-center text-white-600">&copy; MADE BY SHREYA DEBNATH. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Function to analyze sentiment
+        function analyzeSentiment() {
+            var tweet = document.getElementById('tweetInput').value.trim();
+            if (tweet === "") {
+                document.getElementById('result_tweet').innerHTML = `<p class="text-red-600">Please enter a tweet.</p>`;
+                return;
+            }
+    
+            var data = { 'tweet': tweet };
+    
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received response:', data); // Debugging statement
+    
+                    var positiveClass = '';
+                    var negativeClass = '';
+                    var neutralClass = '';
+    
+                    if (data.sentiment === 'positive') {
+                        positiveClass = 'border-positive enlarged';
+                    } else if (data.sentiment === 'negative') {
+                        negativeClass = 'border-negative enlarged';
+                    } else {
+                        neutralClass = 'border-neutral enlarged';
+                    }
+    
+                    var confidence = data.confidence ? data.confidence.toFixed(2) : 'N/A';
+                    var negativeScore = data.confidence_scores ? (data.confidence_scores.negative * 100).toFixed(2) : 'N/A';
+                    var neutralScore = data.confidence_scores ? (data.confidence_scores.neutral * 100).toFixed(2) : 'N/A';
+                    var positiveScore = data.confidence_scores ? (data.confidence_scores.positive * 100).toFixed(2) : 'N/A';
+    
+                    var resultHTML = `
+                        <div class="p-4 flex flex-col items-center">
+                            <div class="mb-4 text-left w-full max-w-lg">
+                                <p class="mb-2 break-words"><strong>Input Tweet:</strong> ${tweet}</p>
+                                <p class="mb-2"><strong>Sentiment:</strong> ${data.sentiment}</p>
+                                <p class="mb-2"><strong>Confidence:</strong> ${confidence}</p>
+                                <p class="mb-2"><strong>Confidence Scores:</strong> Negative: ${negativeScore}%, Neutral: ${neutralScore}%, Positive: ${positiveScore}%</p>
+                            </div>
+                            <div class="flex space-x-4">
+                                <img src="/public/css/positive (1).png" alt="Positive" class="emoji ${positiveClass}">
+                                <img src="/public/css/neutral.png" alt="Neutral" class="emoji ${neutralClass}">
+                                <img src="/public/css/negative.png" alt="Negative" class="emoji ${negativeClass}">
+                            </div>
+                        </div>`;
+    
+                    document.getElementById('result_tweet').innerHTML = resultHTML;
+                    sessionStorage.setItem('lastResult', resultHTML);
+                    console.log('Result saved to sessionStorage');
+                })
+                .catch(error => {
+                    document.getElementById('result_tweet').innerHTML = `<p class="text-red-600">${error.message}</p>`;
+                });
+        }
+    
+        // // Load the last result if available
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     console.log('Loading last result');
+        //     var lastResult = sessionStorage.getItem('lastResult');
+        //     if (lastResult) {
+        //         document.getElementById('result_tweet').innerHTML = lastResult;
+        //         console.log('Loaded last result from sessionStorage');
+        //     } else {
+        //         console.log('No last result found in sessionStorage');
+        //     }
+        // });
+
+        // // Clear the last result when the user closes the tab or window
+        // window.addEventListener('beforeunload', () => {
+        //     console.log('Clearing last result');
+        //     sessionStorage.removeItem('lastResult');
+        // });
+    </script>
+</body>
+</html>
